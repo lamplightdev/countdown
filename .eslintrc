@@ -1,0 +1,14 @@
+{
+  "extends": "airbnb",
+
+  "globals": {
+  },
+
+  "rules": {
+    "id-length": [2, {
+      "min": 2,
+      "exceptions": ["_"]
+    }],
+    "no-underscore-dangle": [0],
+  }
+}
