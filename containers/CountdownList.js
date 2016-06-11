@@ -11,7 +11,7 @@ const mapStateToProps = (state) => (
 
 const mapDispatchToProps = (dispatch) => (
   {
-    onCountdownClick: (id) => dispatch(removeCountdown(id)),
+    onCountdownRemove: (id) => dispatch(removeCountdown(id)),
   }
 );
 

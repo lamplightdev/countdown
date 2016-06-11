@@ -33,7 +33,7 @@
   },
   "scripts": {
     "babel-node": "babel-node --presets=es2015,react --plugins=transform-object-rest-spread,transform-es2015-destructuring",
-    "dev": "watchify -t [ babelify --plugins [ transform-object-rest-spread transform-es2015-destructuring ] --presets [ es2015 react ] ] client.js -o static/js/build/app.js",
+    "dev": "watchify -d -t [ babelify --plugins [ transform-object-rest-spread transform-es2015-destructuring ] --presets [ es2015 react ] ] client.js -o static/js/build/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

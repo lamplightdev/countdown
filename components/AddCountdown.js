@@ -21,7 +21,7 @@ class AddCountdown extends React.Component {
       <form
         method="post"
         action=""
-        onSubmit={(event) => {
+        onSubmit={event => {
           event.preventDefault();
 
           const valueInt = parseInt(this.input.value, 10);

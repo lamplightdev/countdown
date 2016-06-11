@@ -5,10 +5,10 @@ import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 
 import countdownApp from '../reducers';
-import { addCountdown, setUIState } from '../actions';
+import { addCountdown, removeCountdown, setUIState } from '../actions';
 import routes from '../routes';
 import logger from '../middleware/redux/logger';
-import syncDb from '../middleware/redux/db';
+import syncDB from '../middleware/redux/syncdb';
 
 import PouchDB from 'pouchdb';
 
@@ -44,14 +44,14 @@ const Router = (req, res) => {
     include_docs: true,
   }).then(countdownDocs => {
     store = createStore(countdownApp, {
-      countdowns: countdownDocs.rows.map(doc => {
-        return {
+      countdowns: countdownDocs.rows.map(doc => (
+        {
           id: doc.doc._id,
           time: doc.doc.time,
-        };
-      }),
+        }
+      )),
       data: [],
-    }, applyMiddleware(logger, syncDb));
+    }, applyMiddleware(logger, syncDB()));
   }).then(() => {
     match({ routes, location: req.url }, (error, redirectLocation, renderProps) => {
       if (error) {
@@ -59,14 +59,24 @@ const Router = (req, res) => {
       } else if (redirectLocation) {
         res.redirect(302, redirectLocation.pathname + redirectLocation.search);
       } else if (renderProps) {
-        if (typeof req.body.time !== 'undefined') {
-          const valueInt = parseInt(req.body.time, 10);
-          if (valueInt > 9) {
-            store.dispatch(addCountdown(valueInt));
-            store.dispatch(setUIState('invalid', false));
-          } else {
-            store.dispatch(setUIState('invalid', true));
-          }
+        switch (req.method) {
+          case 'GET':
+            break;
+          case 'POST':
+            if (req.body.action === 'remove' && req.body.id) {
+              store.dispatch(removeCountdown(req.body.id));
+            } else if (typeof req.body.time !== 'undefined') {
+              const valueInt = parseInt(req.body.time, 10);
+              if (valueInt > 9) {
+                store.dispatch(addCountdown(valueInt));
+                store.dispatch(setUIState('invalid', false));
+              } else {
+                store.dispatch(setUIState('invalid', true));
+              }
+            }
+            break;
+          default:
+            break;
         }
 
         res.status(200).send(renderFullPage(renderToString(

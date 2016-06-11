@@ -9,7 +9,7 @@ const countdowns = (state = [], action) => {
       if (state.length) {
         const lastId = state[state.length - 1].id;
         const dashPos = lastId.lastIndexOf('-');
-        count = lastId.substr(dashPos + 1) + 1;
+        count = parseInt(lastId.substr(dashPos + 1), 10) + 1;
       }
 
       return [
