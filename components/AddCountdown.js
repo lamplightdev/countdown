@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { addCountdown, setUIState } from '../actions';
+import { withRouter } from 'react-router';
 
 class AddCountdown extends React.Component {
   constructor(props) {
@@ -20,18 +20,18 @@ class AddCountdown extends React.Component {
       </div>
       <form
         method="post"
-        action=""
+        action="add"
         onSubmit={event => {
           event.preventDefault();
 
-          const valueInt = parseInt(this.input.value, 10);
-          if (valueInt > 9) {
-            this.props.dispatch(addCountdown(valueInt));
-            this.props.dispatch(setUIState('invalid', false));
-            this.input.value = '';
-          } else {
-            this.props.dispatch(setUIState('invalid', true));
-          }
+          const time = parseInt(this.input.value, 10);
+          this.props.router.replace({
+            pathname: '/add',
+            state: {
+              time,
+              dispatch: this.props.dispatch,
+            },
+          });
         }}
       >
         <div
@@ -59,15 +59,6 @@ class AddCountdown extends React.Component {
         >
           Add Countdown
         </button>
-        <button
-          className="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
-          type="button"
-          onClick={() => {
-            this.props.dispatch(addCountdown(24 * 60 * 60));
-          }}
-        >
-          Add 1 day
-        </button>
       </form>
     </div>);
   }
@@ -80,4 +71,4 @@ AddCountdown.propTypes = {
   }),
 };
 
-export default connect()(AddCountdown);
+export default connect()(withRouter(AddCountdown));
