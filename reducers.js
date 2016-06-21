@@ -4,7 +4,7 @@ import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, SET_UI_STATE } from './actions';
 
 const countdowns = (state = [], action) => {
   switch (action.type) {
-    case ADD_COUNTDOWN:
+    case ADD_COUNTDOWN: {
       let count = 0;
       if (state.length) {
         const lastId = state[state.length - 1].id;
@@ -19,6 +19,7 @@ const countdowns = (state = [], action) => {
           time: action.time,
         },
       ];
+    }
 
     case REMOVE_COUNTDOWN:
       return state.filter(countdown => countdown.id !== action.id).map(countdown =>

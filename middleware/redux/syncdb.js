@@ -27,26 +27,24 @@ const syncDB = (client = false) => {
     switch (action.type) {
       case ADD_COUNTDOWN: {
         const newCountdown = newState.countdowns[newState.countdowns.length - 1];
-        promise = promise.then(() => {
-          return localDB.put({
+        promise = promise.then(() => (
+          localDB.put({
             _id: newCountdown.id,
             time: newCountdown.time,
-          });
-        });
+          })
+        ));
         break;
       }
       case REMOVE_COUNTDOWN:
-        promise = promise.then(() => {
-          return localDB.get(action.id).then(doc => localDB.remove(doc));
-        });
+        promise = promise.then(() => (
+          localDB.get(action.id).then(doc => localDB.remove(doc))
+        ));
         break;
       default:
         break;
     }
 
-    return promise.then(() => {
-      return result;
-    });
+    return promise.then(() => result);
   };
 };
 

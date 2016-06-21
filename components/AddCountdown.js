@@ -28,8 +28,9 @@ class AddCountdown extends React.Component {
           this.props.router.replace({
             pathname: '/add',
             state: {
-              time,
-              dispatch: this.props.dispatch,
+              post: {
+                time,
+              },
             },
           });
         }}

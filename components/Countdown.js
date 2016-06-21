@@ -22,8 +22,9 @@ class Countdown extends React.Component {
           this.props.router.replace({
             pathname: '/remove',
             state: {
-              id,
-              dispatch: this.props.dispatch,
+              post: {
+                id,
+              },
             },
           });
         }}

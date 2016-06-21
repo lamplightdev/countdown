@@ -5,10 +5,10 @@ import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 
 import countdownApp from '../reducers';
-import { addCountdown, removeCountdown, setUIState } from '../actions';
+import { setUIState } from '../actions';
 import routes from '../routes';
 import logger from '../middleware/redux/logger';
-import syncDB from '../middleware/redux/syncdb';
+import syncDB from '../middleware/redux/syncDB';
 import promiseMiddleware from 'redux-promise';
 
 import PouchDB from 'pouchdb';
@@ -51,22 +51,41 @@ const Router = (req, res) => {
         }
       )),
       data: [],
+      ui: {},
     }, applyMiddleware(promiseMiddleware, logger, syncDB()));
   })
   .then(() => {
+    Object.keys(req.query).forEach(key => {
+      store.dispatch(setUIState(key, true));
+    });
+
     const location = {
       pathname: req.url,
+      query: req.query,
       state: {
-        ...req.body,
-        dispatch: store.dispatch,
+        post: req.body,
       },
     };
 
-    match({ routes, location }, (error, redirectLocation, renderProps) => {
+    match({ routes: routes(store), location }, (error, redirectLocation, renderProps) => {
       if (error) {
         res.status(500).send(error.message);
       } else if (redirectLocation) {
-        res.redirect(302, redirectLocation.pathname + redirectLocation.search);
+        // TODO: should be checking in redirectLocation.search is non empty too
+        let search = '';
+        const ui = store.getState().ui;
+        const searchKeys = Object.keys(ui);
+        if (searchKeys.length) {
+          search = searchKeys.reduce((previous, current) => {
+            if (ui[current]) {
+              return `${previous}${current}&`;
+            }
+            return previous;
+          }, '?');
+          search = search.substring(0, search.length - 1);
+        }
+
+        res.redirect(302, redirectLocation.pathname + search);
       } else if (renderProps) {
         res.status(200).send(renderFullPage(renderToString(
           <Provider store={store}>
