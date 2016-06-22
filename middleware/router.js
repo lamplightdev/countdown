@@ -23,6 +23,7 @@ const renderFullPage = (html, initialState) => (`
 
       <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
       <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.indigo-red.min.css">
+      <link rel="stylesheet" href="/css/app.css">
       <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
     </head>
     <body>
@@ -48,10 +49,12 @@ const Router = (req, res) => {
         {
           id: doc.doc._id,
           time: doc.doc.time,
+          start: doc.doc.start,
         }
       )),
       data: [],
       ui: {},
+      now: Math.floor(Date.now() / 1000),
     }, applyMiddleware(promiseMiddleware, logger, syncDB()));
   })
   .then(() => {

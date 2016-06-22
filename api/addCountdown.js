@@ -5,9 +5,8 @@ const add = store => (nextState, replace, callback) => {
 
   const promises = [];
 
-  const valueInt = parseInt(time, 10);
-  if (valueInt > 9) {
-    promises.push(store.dispatch(addCountdown(valueInt)));
+  if (time.match(/^\d+[smhdw]?$/)) {
+    promises.push(store.dispatch(addCountdown(parseInt(time, 10), Math.floor(Date.now() / 1000))));
     promises.push(store.dispatch(setUIState('invalid', false)));
   } else {
     promises.push(store.dispatch(setUIState('invalid', true)));

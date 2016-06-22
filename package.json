@@ -6,11 +6,13 @@
   "dependencies": {
     "body-parser": "^1.15.1",
     "compression": "^1.6.2",
+    "d3": "^3.5.17",
     "express": "^4.13.4",
     "moment": "^2.13.0",
     "pouchdb": "^5.4.1",
     "react": "^15.0.2",
     "react-dom": "^15.1.0",
+    "react-faux-dom": "^2.5.0",
     "react-redux": "^4.4.5",
     "react-router": "^2.4.1",
     "redux": "^3.5.2",
@@ -28,11 +30,17 @@
     "eslint-plugin-import": "^1.8.1",
     "eslint-plugin-jsx-a11y": "^1.2.2",
     "eslint-plugin-react": "^5.1.1",
+    "node-sass": "^3.8.0",
+    "npm-run-all": "^2.2.0",
     "watchify": "^3.7.0"
   },
   "scripts": {
     "babel-node": "babel-node --presets=es2015,react --plugins=transform-object-rest-spread,transform-es2015-destructuring",
-    "dev": "watchify -d -t [ babelify --plugins [ transform-object-rest-spread transform-es2015-destructuring ] --presets [ es2015 react ] ] client.js -o static/js/build/app.js",
+    "dev:clientscripts": "watchify -d -t [ babelify --plugins [ transform-object-rest-spread transform-es2015-destructuring ] --presets [ es2015 react ] ] client.js -o static/js/build/app.js",
+    "dev:serverscripts": "nodemon --exec npm run babel-node -- server.js",
+    "dev:styles": "node-sass -w sass/app.scss > static/css/app.css",
+    "dev:db": "couchdb",
+    "dev": "npm-run-all -l --parallel dev:**",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

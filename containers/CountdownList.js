@@ -6,6 +6,7 @@ import CountdownList from '../components/CountdownList';
 const mapStateToProps = (state) => (
   {
     countdowns: state.countdowns,
+    now: state.now,
   }
 );
 

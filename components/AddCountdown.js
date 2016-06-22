@@ -16,7 +16,7 @@ class AddCountdown extends React.Component {
           display: this.props.ui.invalid ? '' : 'none',
         }}
       >
-        Too small
+        Invalid
       </div>
       <form
         method="post"
@@ -24,12 +24,11 @@ class AddCountdown extends React.Component {
         onSubmit={event => {
           event.preventDefault();
 
-          const time = parseInt(this.input.value, 10);
           this.props.router.replace({
             pathname: '/add',
             state: {
               post: {
-                time,
+                time: this.input.value,
               },
             },
           });
@@ -40,9 +39,8 @@ class AddCountdown extends React.Component {
         >
           <input
             className="mdl-textfield__input"
-            type="number"
+            type="text"
             name="time"
-            min={1}
             ref={node => {
               this.input = node;
             }}

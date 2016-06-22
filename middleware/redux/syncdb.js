@@ -31,6 +31,7 @@ const syncDB = (client = false) => {
           localDB.put({
             _id: newCountdown.id,
             time: newCountdown.time,
+            start: newCountdown.start,
           })
         ));
         break;

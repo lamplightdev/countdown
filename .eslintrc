@@ -7,7 +7,7 @@
   "rules": {
     "id-length": [2, {
       "min": 2,
-      "exceptions": ["_"]
+      "exceptions": ["_", "x", "y", "z", "i", "j", "d"]
     }],
     "no-underscore-dangle": [0],
   }

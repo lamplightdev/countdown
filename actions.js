@@ -3,10 +3,11 @@ export const REMOVE_COUNTDOWN = 'REMOVE_COUNTDOWN';
 
 export const SET_UI_STATE = 'SET_UI_STATE';
 
-export function addCountdown(time) {
+export function addCountdown(time, start) {
   return {
     type: ADD_COUNTDOWN,
     time,
+    start,
   };
 }
 

@@ -5,18 +5,12 @@ import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, SET_UI_STATE } from './actions';
 const countdowns = (state = [], action) => {
   switch (action.type) {
     case ADD_COUNTDOWN: {
-      let count = 0;
-      if (state.length) {
-        const lastId = state[state.length - 1].id;
-        const dashPos = lastId.lastIndexOf('-');
-        count = parseInt(lastId.substr(dashPos + 1), 10) + 1;
-      }
-
       return [
         ...state,
         {
-          id: `countdown-${count}`,
+          id: `${action.start}`,
           time: action.time,
+          start: action.start,
         },
       ];
     }
@@ -49,10 +43,18 @@ const ui = (state = {}, action) => {
   }
 };
 
+const now = (state = 0, action) => {
+  switch (action.type) {
+    default:
+      return state;
+  }
+};
+
 const countdownApp = combineReducers({
   countdowns,
   data,
   ui,
+  now,
 });
 
 export default countdownApp;

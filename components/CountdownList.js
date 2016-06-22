@@ -1,12 +1,15 @@
 import React, { PropTypes } from 'react';
 import Countdown from './Countdown';
 
-const CountdownList = ({ countdowns, onCountdownRemove }) => (
-  <ul>
+const CountdownList = ({ countdowns, now, onCountdownRemove }) => (
+  <ul
+    className="mdl-list"
+  >
     {countdowns.map(countdown => (
       <Countdown
         key={countdown.id}
         {...countdown}
+        now={now}
         onRemove={() => onCountdownRemove(countdown.id)}
       />
     ))}
