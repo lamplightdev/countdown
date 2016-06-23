@@ -1,6 +1,6 @@
 import PouchDB from 'pouchdb';
 
-import { ADD_COUNTDOWN, REMOVE_COUNTDOWN } from '../../actions';
+import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, MODIFY_COUNTDOWN } from '../../actions';
 
 const syncDB = (client = false) => {
   let localDB;
@@ -20,18 +20,15 @@ const syncDB = (client = false) => {
   return store => next => action => {
     const result = next(action);
 
-    const newState = store.getState();
+    // const newState = store.getState();
 
     let promise = Promise.resolve();
 
     switch (action.type) {
       case ADD_COUNTDOWN: {
-        const newCountdown = newState.countdowns[newState.countdowns.length - 1];
         promise = promise.then(() => (
           localDB.put({
-            _id: newCountdown.id,
-            time: newCountdown.time,
-            start: newCountdown.start,
+            _id: action.endTime,
           })
         ));
         break;
@@ -39,6 +36,15 @@ const syncDB = (client = false) => {
       case REMOVE_COUNTDOWN:
         promise = promise.then(() => (
           localDB.get(action.id).then(doc => localDB.remove(doc))
+        ));
+        break;
+      case MODIFY_COUNTDOWN:
+        promise = promise.then(() => (
+          localDB.put({
+            _id: action.newId,
+          })
+          .then(() => localDB.get(action.oldId))
+          .then(doc => localDB.remove(doc))
         ));
         break;
       default:

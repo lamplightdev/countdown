@@ -3,6 +3,9 @@
   border: 0;
   background: transparent; }
 
+svg {
+  width: 100%; }
+
 .axis path,
 .axis line {
   fill: none;
@@ -25,17 +28,12 @@
 svg {
   width: 100%; }
 
-.axis path,
-.axis line {
+.path--background {
   fill: none;
   stroke: #000;
-  shape-rendering: crispEdges; }
+  stroke-width: 2px; }
 
-.x.axis path {
-  display: none; }
-
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px; }
+.label {
+  font: 24px sans-serif;
+  text-anchor: middle; }
 

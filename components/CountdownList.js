@@ -20,8 +20,8 @@ const CountdownList = ({ countdowns, now, onCountdownRemove }) => (
 CountdownList.propTypes = {
   countdowns: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.string.isRequired,
-    time: PropTypes.number.isRequired,
   }).isRequired).isRequired,
+  now: PropTypes.number.isRequired,
   onCountdownRemove: PropTypes.func.isRequired,
 };
 

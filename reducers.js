@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux';
-import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, SET_UI_STATE } from './actions';
+import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, MODIFY_COUNTDOWN, SET_UI_STATE } from './actions';
 
 
 const countdowns = (state = [], action) => {
@@ -8,9 +8,7 @@ const countdowns = (state = [], action) => {
       return [
         ...state,
         {
-          id: `${action.start}`,
-          time: action.time,
-          start: action.start,
+          id: action.endTime,
         },
       ];
     }
@@ -19,6 +17,17 @@ const countdowns = (state = [], action) => {
       return state.filter(countdown => countdown.id !== action.id).map(countdown =>
         Object.assign({}, countdown)
       );
+
+    case MODIFY_COUNTDOWN:
+      return state.map(countdown => {
+        if (countdown.id === action.oldId) {
+          return {
+            ...countdown,
+            id: action.newId,
+          }
+        }
+        return { ...countdown };
+      });
 
     default:
       return state;

@@ -10,10 +10,12 @@ class Countdown extends React.Component {
       interval: null,
     };
 
-    this.input = null;
-
-    const now = this.props.now;
-    this.toGo = this.props.start + this.props.time - now;
+    const now = new Date(this.props.now);
+    this.endTime = new Date(this.props.id);
+    this.toGo = this.endTime.getTime() - now.getTime();
+    if (this.toGo < 0) {
+      this.toGo = 0;
+    }
 
     this.tick = this.tick.bind(this);
   }
@@ -22,13 +24,24 @@ class Countdown extends React.Component {
     this.tick();
   }
 
-  tick() {
-    const now = Math.floor(Date.now() / 1000);
-    this.toGo = this.props.start + this.props.time - now;
+  componentWillUnmount() {
+    cancelAnimationFrame(this.state.interval);
+  }
 
-    this.setState({
-      interval: requestAnimationFrame(this.tick),
-    });
+  tick() {
+    const now = new Date();
+    this.toGo = this.endTime.getTime() - now.getTime();
+
+    if (this.toGo < 0) {
+      this.toGo = 0;
+      this.setState({
+        interval: null,
+      });
+    } else {
+      this.setState({
+        interval: requestAnimationFrame(this.tick),
+      });
+    }
   }
 
   render() {
@@ -36,7 +49,7 @@ class Countdown extends React.Component {
       <li
         className="mdl-list__item"
       >
-        {this.props.time} ({this.toGo})
+        ({this.toGo})
         <form
           className="mdl-list__item-primary-content"
           method="post"
@@ -44,12 +57,11 @@ class Countdown extends React.Component {
           onSubmit={event => {
             event.preventDefault();
 
-            const id = this.input.value;
             this.props.router.replace({
               pathname: '/remove',
               state: {
                 post: {
-                  id,
+                  id: this.props.id,
                 },
               },
             });
@@ -59,15 +71,42 @@ class Countdown extends React.Component {
             type="hidden"
             name="id"
             value={this.props.id}
-            ref={node => {
-              this.input = node;
-            }}
           />
           <button
             className="cd-button cd-button--link mdl-list__item-secondary-action"
             type="submit"
           >
             <i className="material-icons">delete</i>
+          </button>
+        </form>
+        <form
+          className="mdl-list__item-primary-content"
+          method="post"
+          action="remove"
+          onSubmit={event => {
+            event.preventDefault();
+
+            this.props.router.replace({
+              pathname: '/modify',
+              state: {
+                post: {
+                  id: this.props.id,
+                  plus: 10000,
+                },
+              },
+            });
+          }}
+        >
+          <input
+            type="hidden"
+            name="id"
+            value={this.props.id}
+          />
+          <button
+            className="cd-button cd-button--link mdl-list__item-secondary-action"
+            type="submit"
+          >
+            +10
           </button>
         </form>
       </li>
@@ -79,7 +118,8 @@ class Countdown extends React.Component {
 Countdown.propTypes = {
   dispatch: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
-  time: PropTypes.number.isRequired,
+  now: PropTypes.number.isRequired,
+  router: PropTypes.object.isRequired,
 };
 
 export default connect()(withRouter(Countdown));

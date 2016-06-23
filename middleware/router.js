@@ -42,19 +42,18 @@ const Router = (req, res) => {
 
   db.allDocs({
     include_docs: true,
+    descending: true,
   })
   .then(countdownDocs => {
     store = createStore(countdownApp, {
       countdowns: countdownDocs.rows.map(doc => (
         {
           id: doc.doc._id,
-          time: doc.doc.time,
-          start: doc.doc.start,
         }
       )),
       data: [],
       ui: {},
-      now: Math.floor(Date.now() / 1000),
+      now: Date.now(),
     }, applyMiddleware(promiseMiddleware, logger, syncDB()));
   })
   .then(() => {

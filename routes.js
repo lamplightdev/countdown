@@ -3,6 +3,7 @@ import { Route, IndexRoute } from 'react-router';
 
 import apiAddCountdown from './api/addCountdown';
 import apiRemoveCountdown from './api/removeCountdown';
+import apiModifyCountdown from './api/modifyCountdown';
 
 import App from './components/App';
 import Home from './components/Home';
@@ -17,5 +18,6 @@ export default store => (
 
     <Route path="add" onEnter={apiAddCountdown(store)} />
     <Route path="remove" onEnter={apiRemoveCountdown(store)} />
+    <Route path="modify" onEnter={apiModifyCountdown(store)} />
   </Route>
 );
