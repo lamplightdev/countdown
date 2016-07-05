@@ -53,7 +53,7 @@ const Router = (req, res) => {
       )),
       data: [],
       ui: {},
-      now: Date.now(),
+      now: Math.ceil(new Date().getTime() / 1000) * 1000,
     }, applyMiddleware(promiseMiddleware, logger, syncDB()));
   })
   .then(() => {

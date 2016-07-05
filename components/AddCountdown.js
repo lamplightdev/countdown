@@ -28,6 +28,7 @@ class AddCountdown extends React.Component {
             pathname: '/add',
             state: {
               post: {
+                now: this.props.now,
                 time: this.input.value,
               },
             },
@@ -64,6 +65,7 @@ class AddCountdown extends React.Component {
 }
 
 AddCountdown.propTypes = {
+  now: PropTypes.number.isRequired,
   dispatch: PropTypes.func.isRequired,
   ui: PropTypes.shape({
     invalid: PropTypes.bool,

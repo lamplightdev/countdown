@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import { removeCountdown } from '../actions';
+import { removeCountdown, updateNow } from '../actions';
 import CountdownList from '../components/CountdownList';
 
 
@@ -13,6 +13,7 @@ const mapStateToProps = (state) => (
 const mapDispatchToProps = (dispatch) => (
   {
     onCountdownRemove: (id) => dispatch(removeCountdown(id)),
+    onUpdateNow: (now) => dispatch(updateNow(now)),
   }
 );
 

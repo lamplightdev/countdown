@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux';
-import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, MODIFY_COUNTDOWN, SET_UI_STATE } from './actions';
+import { ADD_COUNTDOWN, REMOVE_COUNTDOWN, MODIFY_COUNTDOWN, UPDATE_NOW, SET_UI_STATE } from './actions';
 
 
 const countdowns = (state = [], action) => {
@@ -9,6 +9,7 @@ const countdowns = (state = [], action) => {
         ...state,
         {
           id: action.endTime,
+          length: action.length,
         },
       ];
     }
@@ -54,6 +55,8 @@ const ui = (state = {}, action) => {
 
 const now = (state = 0, action) => {
   switch (action.type) {
+    case UPDATE_NOW:
+      return action.now;
     default:
       return state;
   }

@@ -2,53 +2,40 @@ import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
 
+import Clock from '../components/Clock';
+
 class Countdown extends React.Component {
   constructor(props) {
     super(props);
+  }
 
-    this.state = {
-      interval: null,
-    };
-
-    const now = new Date(this.props.now);
-    this.endTime = new Date(this.props.id);
-    this.toGo = this.endTime.getTime() - now.getTime();
+  componentWillMount() {
+    const nowTimestamp = new Date(this.props.now);
+    const endTimestamp = new Date(this.props.id);
+    this.toGo = endTimestamp - nowTimestamp;
     if (this.toGo < 0) {
       this.toGo = 0;
     }
-
-    this.tick = this.tick.bind(this);
   }
 
-  componentDidMount() {
-    this.tick();
-  }
-
-  componentWillUnmount() {
-    cancelAnimationFrame(this.state.interval);
-  }
-
-  tick() {
-    const now = new Date();
-    this.toGo = this.endTime.getTime() - now.getTime();
-
+  componentDidUpdate() {
+    const nowTimestamp = new Date(this.props.now);
+    const endTimestamp = new Date(this.props.id);
+    this.toGo = endTimestamp - nowTimestamp;
     if (this.toGo < 0) {
       this.toGo = 0;
-      this.setState({
-        interval: null,
-      });
-    } else {
-      this.setState({
-        interval: requestAnimationFrame(this.tick),
-      });
     }
   }
 
   render() {
     return (
       <li
-        className="mdl-list__item"
+        className=""
       >
+        <Clock
+          time={this.toGo}
+          length={this.props.length}
+        />
         ({this.toGo})
         <form
           className="mdl-list__item-primary-content"
@@ -118,6 +105,7 @@ class Countdown extends React.Component {
 Countdown.propTypes = {
   dispatch: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
+  length: PropTypes.number.isRequired,
   now: PropTypes.number.isRequired,
   router: PropTypes.object.isRequired,
 };

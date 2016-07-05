@@ -9,6 +9,7 @@
 
   svg {
     width: 100%;
+    min-width: 20px;
   }
 
 .path--background {
@@ -20,4 +21,8 @@
 .label {
   font: 24px sans-serif;
   text-anchor: middle;
+}
+
+.mdl-layout__drawer, .mdl-layout__obfuscator {
+  display: none !important;
 }
