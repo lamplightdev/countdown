@@ -1,7 +1,7 @@
 import { removeCountdown } from '../actions';
 
 const remove = store => (nextState, replace, callback) => {
-  const id = nextState.location.state.post.id;
+  const id = Number(nextState.location.state.post.id);
 
   const promises = [];
 

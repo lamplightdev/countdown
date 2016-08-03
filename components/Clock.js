@@ -45,6 +45,7 @@ class Clock extends React.Component {
 
   componentWillReceiveProps(newProps) {
     this.field.each(d => {
+      d.size = newProps.length;
       d.value = newProps.time;
     });
 

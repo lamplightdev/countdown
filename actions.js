@@ -21,11 +21,12 @@ export function removeCountdown(id) {
   };
 }
 
-export function modifyCountdown(oldId, newId) {
+export function modifyCountdown(oldId, newId, length) {
   return {
     type: MODIFY_COUNTDOWN,
     oldId,
     newId,
+    length,
   };
 }
 

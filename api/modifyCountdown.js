@@ -1,14 +1,24 @@
 import { modifyCountdown } from '../actions';
 
 const modify = store => (nextState, replace, callback) => {
-  const oldId = nextState.location.state.post.id;
-  const plus = nextState.location.state.post.plus;
+  const oldEnd = Number(nextState.location.state.post.id);
+  const plus = Number(nextState.location.state.post.plus);
+  let now = Number(nextState.location.state.post.now);
+  if (!now) {
+    now = new Date().getTime();
+  }
 
-  const newId = new Date(new Date(oldId).getTime() + plus).toJSON();
+  let newEnd = oldEnd + plus;
+  let length = newEnd - now;
+
+  if (length < plus) {
+    newEnd = now + plus;
+    length = plus;
+  }
 
   const promises = [];
 
-  promises.push(store.dispatch(modifyCountdown(oldId, newId)));
+  promises.push(store.dispatch(modifyCountdown(oldEnd, newEnd, length)));
 
   Promise.all(promises).then(() => {
     replace('/');

@@ -66,7 +66,6 @@ class AddCountdown extends React.Component {
 
 AddCountdown.propTypes = {
   now: PropTypes.number.isRequired,
-  dispatch: PropTypes.func.isRequired,
   ui: PropTypes.shape({
     invalid: PropTypes.bool,
   }),

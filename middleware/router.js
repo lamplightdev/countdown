@@ -48,7 +48,8 @@ const Router = (req, res) => {
     store = createStore(countdownApp, {
       countdowns: countdownDocs.rows.map(doc => (
         {
-          id: doc.doc._id,
+          id: Number(doc.doc._id),
+          length: doc.doc.length,
         }
       )),
       data: [],

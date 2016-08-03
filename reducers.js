@@ -25,6 +25,7 @@ const countdowns = (state = [], action) => {
           return {
             ...countdown,
             id: action.newId,
+            length: action.length,
           }
         }
         return { ...countdown };

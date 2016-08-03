@@ -10,18 +10,14 @@ class Countdown extends React.Component {
   }
 
   componentWillMount() {
-    const nowTimestamp = new Date(this.props.now);
-    const endTimestamp = new Date(this.props.id);
-    this.toGo = endTimestamp - nowTimestamp;
+    this.toGo = this.props.id - this.props.now;
     if (this.toGo < 0) {
       this.toGo = 0;
     }
   }
 
   componentDidUpdate() {
-    const nowTimestamp = new Date(this.props.now);
-    const endTimestamp = new Date(this.props.id);
-    this.toGo = endTimestamp - nowTimestamp;
+    this.toGo = this.props.id - this.props.now;
     if (this.toGo < 0) {
       this.toGo = 0;
     }
@@ -69,7 +65,7 @@ class Countdown extends React.Component {
         <form
           className="mdl-list__item-primary-content"
           method="post"
-          action="remove"
+          action="modify"
           onSubmit={event => {
             event.preventDefault();
 
@@ -78,6 +74,7 @@ class Countdown extends React.Component {
               state: {
                 post: {
                   id: this.props.id,
+                  now: this.props.now,
                   plus: 10000,
                 },
               },
@@ -88,6 +85,11 @@ class Countdown extends React.Component {
             type="hidden"
             name="id"
             value={this.props.id}
+          />
+          <input
+            type="hidden"
+            name="plus"
+            value={10000}
           />
           <button
             className="cd-button cd-button--link mdl-list__item-secondary-action"
@@ -104,7 +106,7 @@ class Countdown extends React.Component {
 
 Countdown.propTypes = {
   dispatch: PropTypes.func.isRequired,
-  id: PropTypes.string.isRequired,
+  id: PropTypes.number.isRequired,
   length: PropTypes.number.isRequired,
   now: PropTypes.number.isRequired,
   router: PropTypes.object.isRequired,

@@ -1,0 +1,603 @@
+<html>
+
+  <head>
+
+  <style>
+    body {
+      font-size: 12px;
+      font-family: Arial;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    h3 {
+      margin: 2em 0 1em 0;
+    }
+
+    .list-item {
+      overflow: hidden;
+    }
+
+    .compass {
+      width: 60px;
+      height: 60px;
+
+      transform-origin: 30px 30px;
+      transition: transform 2s linear;
+    }
+
+    .compass img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .edit-point {
+      display: none;
+      background: red;
+      color: white;
+    }
+
+    .edit-point-open {
+      display: block;
+    }
+
+  </style>
+
+  </head>
+
+  <body>
+
+    <div id='main'></div>
+
+<script>
+
+  const main = document.getElementById('main');
+
+  class Component {
+    constructor(id) {
+      this._id = id;
+
+      this._DOM = null;
+      this._subComponents = {};
+
+      this._lastVars = {};
+    }
+
+    static _escape(toEscape) {
+      if (Array.isArray(toEscape)) {
+        return toEscape.map(item => this._escape(item));
+      }
+
+      if (toEscape !== null && typeof toEscape === 'object') {
+        const obj = {};
+        Object.keys(toEscape).forEach(key => {
+          obj[key] = this._escape(toEscape[key]);
+        });
+        return obj;
+      }
+
+      return `${toEscape}`.replace(/&/g, '&amp;') // first!
+        .replace(/>/g, '&gt;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/`/g, '&#96;');
+    }
+
+    static _html(literalSections, ...substs) {
+      // Use raw literal sections: we don’t want
+      // backslashes (\n etc.) to be interpreted
+      const raw = literalSections.raw;
+
+      let result = '';
+
+      substs.forEach((subst, i) => {
+        // Retrieve the literal section preceding
+        // the current substitution
+        let lit = raw[i].trim();
+
+        // In the example, map() returns an array:
+        // If substitution is an array (and not a string),
+        // we turn it into a string
+        if (Array.isArray(subst)) {
+          subst = subst.join('');
+        }
+
+        // If the substitution is preceded by a dollar sign,
+        // we escape special characters in it
+        if (lit.endsWith('$')) {
+          subst = this._escape(subst);
+          lit = lit.slice(0, -1);
+        }
+        result += lit;
+        result += subst;
+      });
+      // Take care of last literal section
+      // (Never fails, because an empty template string
+      // produces one literal section, an empty string)
+      result += raw[raw.length - 1].trim(); // (A)
+
+      return result;
+    }
+
+    _copy(toCopy) {
+      return JSON.parse(JSON.stringify(toCopy));
+    }
+
+    static templateString() {
+      return 'NO TEMPLATE DEFINED';
+    }
+
+    render(vars) {
+      if (!this._DOM) {
+        this.firstRender(vars);
+      } else {
+        this.reRender(vars);
+      }
+
+      this._lastVars = this._copy(vars);
+      return this._DOM;
+    }
+
+    firstRender(vars) {
+      const el = document.createElement('div');
+      el.innerHTML = this.getTemplate(this._id, vars);
+      this._DOM = el.firstChild;
+
+      const componentContainers = this._DOM.querySelectorAll('[data-component]');
+      [...componentContainers].forEach(componentContainer => {
+        const componentId = componentContainer.getAttribute('data-id');
+        const componentName = componentContainer.getAttribute('data-component');
+        let component;
+
+        eval(`component = new ${componentName}(componentId);`);
+
+        this._subComponents[componentId] = component;
+        componentContainer.appendChild(this._subComponents[componentId].render(vars));
+      });
+    }
+
+    reRender(vars) {
+      if (vars !== this._lastVars) {
+        Object.keys(this._subComponents)
+          .forEach(componentName => this._subComponents[componentName].render(vars));
+        return;
+      }
+    }
+
+    getTemplate(id, vars = {}) {
+      return this.constructor.templateString(id, vars);
+    }
+  }
+
+  class App extends Component {
+    static templateString() {
+      return this._html`
+      <div class='app'>
+        <div
+          data-component='Header'
+          data-id='header'
+        ></div>
+        <div
+          data-component='PageContainer'
+          data-id='page-container'
+        ></div>
+        <div class='edit-point-container'
+          data-component='EditPoint'
+          data-id='edit-point'
+        ></div>
+      </div>
+      `;
+    }
+  }
+
+  class PageContainer extends Component {
+    static templateString(id, vars) {
+      let componentName = null;
+
+      switch (vars.page) {
+        case 'list':
+          componentName = 'ListPage';
+          break;
+        case 'account':
+          componentName = 'AccountPage';
+          break;
+        default:
+          break;
+      }
+
+      return this._html`
+      <div class='page-container'>
+        <div
+          class='app-page'
+          data-component='${componentName}'
+          data-id='page'
+        ></div>
+      </div>
+      `;
+    }
+
+    reRender(vars) {
+      if (vars.page !== this._lastVars.page) {
+        let component;
+        let componentName = null;
+
+        switch (vars.page) {
+          case 'list':
+            componentName = 'ListPage';
+            break;
+          case 'account':
+            componentName = 'AccountPage';
+            break;
+          default:
+            break;
+        }
+
+        eval(`component = new ${componentName}('page');`);
+
+        const oldPage = this._subComponents.page._DOM;
+        this._subComponents.page = component;
+        this._DOM.querySelector('.app-page').replaceChild(this._subComponents.page.render(vars), oldPage);
+      }
+
+      return super.reRender(vars);
+    }
+  }
+
+  class Header extends Component {
+    static templateString(id, vars) {
+      const listLink = vars.page === 'list' ? 'List' : '<a class=\'list-page-link\' href=\'/list\'>List</a>';
+      const accountLink = vars.page === 'account' ? 'Account' : '<a class=\'account-page-link\' href=\'/account\'>Account</a>';
+
+      return this._html`
+      <div class='header'>
+        ${listLink}
+        ${accountLink}
+      </div>
+      `;
+    }
+
+    firstRender(vars) {
+      super.firstRender(vars);
+      const listLink = this._DOM.querySelector('.list-page-link');
+      if (listLink) {
+        listLink.addEventListener('click', event => {
+          event.preventDefault();
+          updatePage('list');
+        });
+      }
+
+      const accountLink = this._DOM.querySelector('.account-page-link');
+      if (accountLink) {
+        accountLink.addEventListener('click', event => {
+          event.preventDefault();
+          updatePage('account');
+        });
+      }
+    }
+
+    reRender(vars) {
+      if (vars.page !== this._lastVars.page) {
+        const old = this._DOM;
+        this._DOM = null;
+        old.parentNode.replaceChild(this.render(vars), old);
+      }
+
+      super.reRender(vars);
+    }
+  }
+
+  class Compass extends Component {
+    static templateString() {
+      return this._html`
+      <div class='compass'>
+        <img src='compass.svg'>
+      </div>
+      `;
+    }
+  }
+
+  class EditPoint extends Component {
+    static templateString(id, vars) {
+      let latitude = '';
+      let longitude = '';
+
+      const foundItem = vars.items[vars.editItem];
+      if (foundItem) {
+        latitude = foundItem.latitude;
+        longitude = foundItem.longitude;
+      }
+
+      return this._html`
+      <form class='edit-point $${vars.editItem !== false ? 'edit-point-open' : ''}'>
+        <input type='text' name='latitude' value='$${latitude}'>
+        <input type='text' name='longitude' value='$${longitude}'>
+        <button class='use-current' type='button'>Use current location</button>
+        <button type='submit'>Save</button>
+        <a class='close-edit-point' href='#'>close</a>
+      </form>
+      `;
+    }
+
+    firstRender(vars) {
+      super.firstRender(vars);
+
+      this._DOM.querySelector('.close-edit-point').addEventListener('click', event => {
+        event.preventDefault();
+        closeEditItem();
+      });
+
+      this._DOM.querySelector('.use-current').addEventListener('click', event => {
+        event.preventDefault();
+
+        saveItem(vars.editItem, {
+          latitude: geoPosition.coords.latitude,
+          longitude: geoPosition.coords.longitude,
+        });
+        closeEditItem();
+      });
+
+      this._DOM.addEventListener('submit', event => {
+        event.preventDefault();
+
+        saveItem(vars.editItem, {
+          latitude: event.target.latitude.value,
+          longitude: event.target.longitude.value,
+        });
+        closeEditItem();
+      });
+    }
+
+    reRender(vars) {
+      if (vars.editItem !== this._lastVars.editItem) {
+        const old = this._DOM;
+        this._DOM = null;
+        old.parentNode.replaceChild(this.render(vars), old);
+      }
+
+      super.reRender(vars);
+    }
+  }
+
+  class ListItem extends Component {
+    static templateString(id, vars) {
+      const itemId = parseInt(id.substring(id.indexOf('-') + 1), 10);
+      const foundItem = vars.items.find(item => item.id === itemId);
+      return this._html`
+      <div>
+        <h4>$${foundItem.title} ($${vars.title}) - $${itemId}</h4>
+        <h3>$${foundItem.latitude}, $${foundItem.longitude}</h3>
+        <div
+          data-component='Compass'
+          data-id='compass-${id}'
+        ></div>
+        <button class='edit-item'>Edit</button>
+        <button class='remove-item'>Remove</button>
+      </div>
+      `;
+    }
+
+    firstRender(vars) {
+      super.firstRender(vars);
+
+      const id = parseInt(this._id.substring(this._id.indexOf('-') + 1), 10);
+
+      this._DOM.querySelector('.edit-item').addEventListener('click', () => {
+        editItem(id);
+      });
+
+      this._DOM.querySelector('.remove-item').addEventListener('click', () => {
+        removeItem(id);
+      });
+    }
+
+    reRender(vars) {
+      if (vars !== this._lastVars) {
+        const id = parseInt(this._id.substring(this._id.indexOf('-') + 1), 10);
+        const foundItem = vars.items.find(item => item.id === id);
+
+        this._DOM.querySelector('h4').innerHTML = this.constructor._html`$${foundItem.title} ($${vars.title}) - $${foundItem.id}`;
+        this._DOM.querySelector('h3').innerHTML = this.constructor._html`$${foundItem.latitude}, $${foundItem.longitude}`;
+      }
+
+      super.reRender(vars);
+    }
+  }
+
+  class AccountPage extends Component {
+    static templateString(id, vars) {
+      return this._html`
+        <div>
+          <h1>Account ($${vars.title})</h1>
+        </div>
+      `;
+    }
+  }
+
+  class ListPage extends Component {
+    static templateString(id, vars) {
+      return this._html`
+      <div>
+        <h1>$${vars.title}</h1>
+        <ul>
+          ${vars.items.map(item => `
+            <li
+              data-component='ListItem'
+              data-id='item-${item.id}'
+            ></li>
+          `)}
+        </ul>
+        <div>
+          <button class='add-item'>Add</button>
+        </div>
+      </div>
+      `;
+    }
+
+    firstRender(vars) {
+      super.firstRender(vars);
+      this._DOM.querySelector('.add-item').addEventListener('click', addItem);
+    }
+
+    reRender(vars) {
+      if (vars !== this._lastVars) {
+        if (vars.title !== this._lastVars.title) {
+          this._DOM.querySelector('h1').innerHTML = this.constructor._html`$${vars.title}`;
+        }
+
+        const ul = this._DOM.querySelector('ul');
+
+        const toDelete = this._lastVars.items.filter(oldItem => vars.items.findIndex(newItem => newItem.id === oldItem.id) === -1);
+        toDelete.forEach(deleteItem => {
+          ul.removeChild(this._DOM.querySelector(`li[data-id=item-${deleteItem.id}`));
+          delete this._subComponents[`item-${deleteItem.id}`];
+        });
+
+        let previousLi;
+
+        vars.items.forEach(newItem => {
+          const id = `item-${newItem.id}`;
+          if (this._subComponents[id]) {
+            // this._subComponents[id].render(vars);
+            previousLi = this._subComponents[id]._DOM.parentNode;
+          } else {
+            const component = new ListItem(id);
+            this._subComponents[id] = component;
+
+            const li = document.createElement('li');
+            li.dataset.id = id;
+            li.dataset.component = 'ListItem';
+            li.appendChild(this._subComponents[id].render(vars));
+
+            if (previousLi) {
+              ul.insertBefore(li, previousLi.nextSibling);
+            } else {
+              ul.insertBefore(li, ul.firstChild);
+            }
+
+            previousLi = li;
+          }
+        });
+
+        super.reRender(vars);
+      }
+    }
+  }
+
+
+  const randomNum = (size) => Math.floor(Math.random() * (size + 1));
+
+  const rotateRandom = () => {
+    const items = document.querySelectorAll('.compass');
+    [...items].forEach(item => {
+      item.style.transform = `rotate(${randomNum(360)}deg)`;
+    });
+
+    setTimeout(rotateRandom, 5000);
+  };
+
+  const addItem = () => {
+    store.title = '<em>Added</em>';
+    store.items = store.items.slice();
+
+    const item = {
+      id: store.count,
+      title: `item ${store.count}`,
+    };
+
+    if (geoPosition) {
+      item.latitude = geoPosition.coords.latitude;
+      item.longitude = geoPosition.coords.longitude;
+    } else {
+      try {
+        console.log('No current location');
+        const lastGeoPosition = JSON.parse(localStorage.getItem('lastGeoPosition'));
+        item.latitude = lastGeoPosition.coords.latitude;
+        item.longitude = lastGeoPosition.coords.longitude;
+      } catch (excpn) {
+        console.log('No saved location');
+        item.latitude = 'none';
+        item.longitude = 'none';
+      }
+    }
+
+    store.items.push(item);
+    store.count++;
+
+    app.render(store);
+  };
+
+  const editItem = id => {
+    store.editItem = id;
+    store.items[id].title += ' <i>editing</i>';
+    app.render(store);
+  };
+
+  const saveItem = (id, props) => {
+    Object.assign(store.items[id], props);
+    app.render(store);
+  };
+
+  const closeEditItem = () => {
+    store.editItem = false;
+    app.render(store);
+  };
+
+  const removeItem = id => {
+    store.title = '<em>Removed</em>';
+    const foundIndex = store.items.findIndex(item => item.id === id);
+    if (foundIndex > -1) {
+      store.items.splice(foundIndex, 1);
+      app.render(store);
+    }
+  };
+
+  const updatePage = name => {
+    history.pushState(null, null, name);
+    store.page = name;
+    app.render(store);
+  };
+
+  const store = {};
+  let geoPosition = null;
+
+  const app = new App();
+
+  const watchLocation = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition(position => {
+        geoPosition = position;
+        localStorage.setItem('lastGeoPosition', JSON.stringify({
+          coords: {
+            latitude: geoPosition.coords.latitude,
+            longitude: geoPosition.coords.longitude,
+          },
+        }));
+      });
+    }
+  };
+
+
+  const init = (pageName) => {
+    store.page = pageName;
+    store.title = '<em>Testing</em>';
+    store.items = [];
+    store.count = 0;
+    store.editItem = false;
+
+    main.innerHTML = '';
+    main.appendChild(app.render(store));
+
+    rotateRandom();
+    watchLocation();
+  };
+
+  init('##pageName##');
+
+</script>
+
+  </body>
+
+</html>

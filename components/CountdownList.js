@@ -15,6 +15,10 @@ class CountdownList extends React.Component {
     this.tick();
   }
 
+  componentWillReceiveProps() {
+    this.tick();
+  }
+
   componentWillUnmount() {
     this.interval = cancelAnimationFrame(this.interval);
   }
@@ -26,11 +30,13 @@ class CountdownList extends React.Component {
       return new Date(countdown.id).getTime() > nowTimestamp;
     }).length;
 
-    if (true || numActiveCountdowns) {
-      if (true || nowTimestamp - this.lastTimestamp >= 100) {
+    if (numActiveCountdowns) {
+      if (nowTimestamp - this.lastTimestamp >= 16) {
         this.props.onUpdateNow(nowTimestamp);
         this.lastTimestamp = nowTimestamp;
       }
+    } else {
+      this.interval = cancelAnimationFrame(this.interval);
     }
 
     this.interval = requestAnimationFrame(this.tick);
@@ -57,7 +63,7 @@ class CountdownList extends React.Component {
 
 CountdownList.propTypes = {
   countdowns: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.number.isRequired,
     length: PropTypes.number.isRequired,
   }).isRequired).isRequired,
   now: PropTypes.number.isRequired,
