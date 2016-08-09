@@ -1,31 +1,16 @@
 <html>
 
   <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/app.css">
 
   <style>
-    body {
-      font-size: 12px;
-      font-family: Arial;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    h3 {
-      margin: 2em 0 1em 0;
-    }
-
-    .list-item {
-      overflow: hidden;
-    }
-
     .compass {
       width: 60px;
       height: 60px;
 
       transform-origin: 30px 30px;
-      transition: transform 2s linear;
+      transition: transform 0.5s ease-in;
     }
 
     .compass img {
@@ -34,34 +19,47 @@
     }
 
     .edit-point {
-      display: none;
-      background: red;
-      color: white;
+      background: white;
+      color: black;
     }
 
-    .edit-point-open {
-      display: block;
+    .overlay {
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+    }
+
+      .overlay--open {
+        display: flex;
+      }
+
+    main {
+      margin-top: 7.6rem;
     }
 
   </style>
 
   </head>
 
-  <body>
+  <body lang="en" class='md-has-fixed-header md-has-header-tabs nojs'>
 
-    <div id='main'></div>
+      <div id='main'></div>
+
+    </div>
 
 <script>
 
   const main = document.getElementById('main');
 
   class Component {
-    constructor(id) {
-      this._id = id;
-
+    constructor() {
       this._DOM = null;
       this._subComponents = {};
-
       this._lastVars = {};
     }
 
@@ -126,54 +124,65 @@
       return JSON.parse(JSON.stringify(toCopy));
     }
 
-    static templateString() {
+    static templateString(vars = {}, componentVars = {}) {
       return 'NO TEMPLATE DEFINED';
     }
 
-    render(vars) {
+    getTemplate(vars = {}, componentVars = {}) {
+      return this.constructor.templateString(vars, componentVars);
+    }
+
+    render(vars = {}, componentVars = {}) {
       if (!this._DOM) {
-        this.firstRender(vars);
+        this.firstRender(vars, componentVars);
       } else {
-        this.reRender(vars);
+        this.reRender(vars, componentVars);
       }
 
       this._lastVars = this._copy(vars);
       return this._DOM;
     }
 
-    firstRender(vars) {
+    firstRender(vars = {}, componentVars = {}) {
       const el = document.createElement('div');
-      el.innerHTML = this.getTemplate(this._id, vars);
+      el.innerHTML = this.getTemplate(vars, componentVars);
       this._DOM = el.firstChild;
 
       const componentContainers = this._DOM.querySelectorAll('[data-component]');
       [...componentContainers].forEach(componentContainer => {
         const componentId = componentContainer.getAttribute('data-id');
-        const componentName = componentContainer.getAttribute('data-component');
-        let component;
 
-        eval(`component = new ${componentName}(componentId);`);
+        if (!this._subComponents[componentId]) {
+          //component may have been initialised in sub class firstRender method
 
-        this._subComponents[componentId] = component;
-        componentContainer.appendChild(this._subComponents[componentId].render(vars));
+          const componentName = componentContainer.getAttribute('data-component');
+          let component;
+
+          eval(`component = new ${componentName}();`);
+
+          this._subComponents[componentId] = component;
+
+          componentContainer.parentNode.replaceChild(this._subComponents[componentId].render(vars, componentVars), componentContainer);
+        } else {
+          componentContainer.parentNode.replaceChild(this._subComponents[componentId]._DOM, componentContainer);
+        }
+
       });
     }
 
-    reRender(vars) {
+    reRender(vars = {}, componentVars = {}) {
       if (vars !== this._lastVars) {
-        Object.keys(this._subComponents)
-          .forEach(componentName => this._subComponents[componentName].render(vars));
-        return;
-      }
-    }
+        this._subComponents = [];
 
-    getTemplate(id, vars = {}) {
-      return this.constructor.templateString(id, vars);
+        const old = this._DOM;
+        this._DOM = null;
+        old.parentNode.replaceChild(this.render(vars, componentVars), old);
+      }
     }
   }
 
   class App extends Component {
-    static templateString() {
+    static templateString(vars = {}, componentVars = {}) {
       return this._html`
       <div class='app'>
         <div
@@ -184,17 +193,50 @@
           data-component='PageContainer'
           data-id='page-container'
         ></div>
-        <div class='edit-point-container'
-          data-component='EditPoint'
-          data-id='edit-point'
+        <div
+          data-component='OverlayEditItem'
+          data-id='overlay-edit-item'
         ></div>
       </div>
       `;
     }
   }
 
+  class Overlay extends Component {
+    static templateString(vars = {}, componentVars = {}) {
+      const componentName = componentVars.componentName;
+      const componentId = componentVars.componentId;
+      const isOpen = componentVars.isOpen;
+
+      const classes = ['overlay'];
+      if (isOpen) {
+        classes.push('overlay--open')
+      }
+
+      return this._html`
+      <div class='$${classes.join(' ')}'>
+        <div
+          data-component='${componentName}'
+          data-id='${componentId}'
+        ></div>
+      </div>
+      `;
+    }
+  }
+
+  class OverlayEditItem extends Overlay {
+    static templateString(vars = {}, componentVars = {}) {
+      componentVars.componentName = 'EditItem';
+      componentVars.componentId = 'edit-item';
+      componentVars.isOpen = vars.editItem !== false;
+      componentVars.editItem = vars.items[vars.editItem];
+
+      return super.templateString(vars, componentVars);
+    }
+  }
+
   class PageContainer extends Component {
-    static templateString(id, vars) {
+    static templateString(vars = {}, componentVars = {}) {
       let componentName = null;
 
       switch (vars.page) {
@@ -209,58 +251,52 @@
       }
 
       return this._html`
-      <div class='page-container'>
-        <div
-          class='app-page'
-          data-component='${componentName}'
-          data-id='page'
-        ></div>
-      </div>
+      <main class="mdl-layout__content">
+        <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
+          <div class="page-content">
+            <div
+              data-component='${componentName}'
+              data-id='page'
+            ></div>
+          </div>
+        </section>
+      </main>
       `;
-    }
-
-    reRender(vars) {
-      if (vars.page !== this._lastVars.page) {
-        let component;
-        let componentName = null;
-
-        switch (vars.page) {
-          case 'list':
-            componentName = 'ListPage';
-            break;
-          case 'account':
-            componentName = 'AccountPage';
-            break;
-          default:
-            break;
-        }
-
-        eval(`component = new ${componentName}('page');`);
-
-        const oldPage = this._subComponents.page._DOM;
-        this._subComponents.page = component;
-        this._DOM.querySelector('.app-page').replaceChild(this._subComponents.page.render(vars), oldPage);
-      }
-
-      return super.reRender(vars);
     }
   }
 
   class Header extends Component {
-    static templateString(id, vars) {
-      const listLink = vars.page === 'list' ? 'List' : '<a class=\'list-page-link\' href=\'/list\'>List</a>';
-      const accountLink = vars.page === 'account' ? 'Account' : '<a class=\'account-page-link\' href=\'/account\'>Account</a>';
-
+    static templateString(vars = {}, componentVars = {}) {
       return this._html`
-      <div class='header'>
-        ${listLink}
-        ${accountLink}
-      </div>
+      <header class="md-fixed-header md-header--has-tabs">
+        <div class='md-actionbar'>
+
+          <div class='md-actionbar__menu'>
+            <a href='?menu=open' class='md-btn-menu'>
+              <span></span>
+              <span></span>
+              <span></span>
+            </a>
+          </div>
+
+          <h3 class='md-actionbar__title'>Waypoint</h3>
+        </div>
+
+        <div class='md-tabs md-tabs--2'>
+          <div class='md-tab $${vars.page === 'list' ? 'current' : ''}'>
+            <a href="/list" class='list-page-link'>List</a>
+          </div>
+          <div class='md-tab $${vars.page === 'account' ? 'current' : ''}'>
+            <a href="/list" class='account-page-link'>Account</a>
+          </div>
+        </div>
+      </header>
       `;
     }
 
-    firstRender(vars) {
-      super.firstRender(vars);
+    firstRender(vars = {}, componentVars = {}) {
+      super.firstRender(vars, componentVars);
+
       const listLink = this._DOM.querySelector('.list-page-link');
       if (listLink) {
         listLink.addEventListener('click', event => {
@@ -277,20 +313,10 @@
         });
       }
     }
-
-    reRender(vars) {
-      if (vars.page !== this._lastVars.page) {
-        const old = this._DOM;
-        this._DOM = null;
-        old.parentNode.replaceChild(this.render(vars), old);
-      }
-
-      super.reRender(vars);
-    }
   }
 
   class Compass extends Component {
-    static templateString() {
+    static templateString(vars = {}, componentVars = {}) {
       return this._html`
       <div class='compass'>
         <img src='compass.svg'>
@@ -299,19 +325,19 @@
     }
   }
 
-  class EditPoint extends Component {
-    static templateString(id, vars) {
+  class EditItem extends Component {
+    static templateString(vars = {}, componentVars = {}) {
       let latitude = '';
       let longitude = '';
 
-      const foundItem = vars.items[vars.editItem];
-      if (foundItem) {
-        latitude = foundItem.latitude;
-        longitude = foundItem.longitude;
+      const item = componentVars.editItem;
+      if (item) {
+        latitude = item.latitude;
+        longitude = item.longitude;
       }
 
       return this._html`
-      <form class='edit-point $${vars.editItem !== false ? 'edit-point-open' : ''}'>
+      <form class='edit-point'>
         <input type='text' name='latitude' value='$${latitude}'>
         <input type='text' name='longitude' value='$${longitude}'>
         <button class='use-current' type='button'>Use current location</button>
@@ -321,8 +347,8 @@
       `;
     }
 
-    firstRender(vars) {
-      super.firstRender(vars);
+    firstRender(vars = {}, componentVars = {}) {
+      super.firstRender(vars, componentVars);
 
       this._DOM.querySelector('.close-edit-point').addEventListener('click', event => {
         event.preventDefault();
@@ -332,9 +358,11 @@
       this._DOM.querySelector('.use-current').addEventListener('click', event => {
         event.preventDefault();
 
+        const position = getPosition();
+
         saveItem(vars.editItem, {
-          latitude: geoPosition.coords.latitude,
-          longitude: geoPosition.coords.longitude,
+          latitude: position.latitude,
+          longitude: position.longitude,
         });
         closeEditItem();
       });
@@ -349,65 +377,54 @@
         closeEditItem();
       });
     }
-
-    reRender(vars) {
-      if (vars.editItem !== this._lastVars.editItem) {
-        const old = this._DOM;
-        this._DOM = null;
-        old.parentNode.replaceChild(this.render(vars), old);
-      }
-
-      super.reRender(vars);
-    }
   }
 
   class ListItem extends Component {
-    static templateString(id, vars) {
-      const itemId = parseInt(id.substring(id.indexOf('-') + 1), 10);
-      const foundItem = vars.items.find(item => item.id === itemId);
+    static templateString(vars = {}, componentVars = {}) {
+      const item = componentVars.item;
+
       return this._html`
       <div>
-        <h4>$${foundItem.title} ($${vars.title}) - $${itemId}</h4>
-        <h3>$${foundItem.latitude}, $${foundItem.longitude}</h3>
-        <div
-          data-component='Compass'
-          data-id='compass-${id}'
-        ></div>
-        <button class='edit-item'>Edit</button>
-        <button class='remove-item'>Remove</button>
+        <div class='md-list-item__avatar'>
+          <div
+            data-component='Compass'
+            data-id='compass'
+          ></div>
+        </div>
+        <div class='md-list-item__content'>
+          <div class='md-list-item__primary-content'>$${item.title} ($${item.id})</div>
+          <div class='md-list-item__secondary-content'>$${item.latitude}, $${item.longitude}</div>
+        </div>
+        <button class='edit-item md-form-btn md-form-btn--raised'><span>Edit</span></button>
+        <form class='remove-item'>
+          <button class='md-form-btn md-form-btn--danger' type'submit'><span>Remove</span></button>
+        </form>
       </div>
       `;
     }
 
-    firstRender(vars) {
-      super.firstRender(vars);
+    firstRender(vars = {}, componentVars = {}) {
+      const item = componentVars.item;
 
-      const id = parseInt(this._id.substring(this._id.indexOf('-') + 1), 10);
+      super.firstRender(vars, componentVars);
 
       this._DOM.querySelector('.edit-item').addEventListener('click', () => {
-        editItem(id);
+        editItem(item.id);
       });
 
-      this._DOM.querySelector('.remove-item').addEventListener('click', () => {
-        removeItem(id);
+      this._DOM.querySelector('.remove-item').addEventListener('submit', event => {
+        event.preventDefault();
+        removeItem(item.id);
       });
-    }
-
-    reRender(vars) {
-      if (vars !== this._lastVars) {
-        const id = parseInt(this._id.substring(this._id.indexOf('-') + 1), 10);
-        const foundItem = vars.items.find(item => item.id === id);
-
-        this._DOM.querySelector('h4').innerHTML = this.constructor._html`$${foundItem.title} ($${vars.title}) - $${foundItem.id}`;
-        this._DOM.querySelector('h3').innerHTML = this.constructor._html`$${foundItem.latitude}, $${foundItem.longitude}`;
-      }
-
-      super.reRender(vars);
     }
   }
 
-  class AccountPage extends Component {
-    static templateString(id, vars) {
+  class Page extends Component {
+
+  }
+
+  class AccountPage extends Page {
+    static templateString(vars = {}, componentVars = {}) {
       return this._html`
         <div>
           <h1>Account ($${vars.title})</h1>
@@ -416,73 +433,41 @@
     }
   }
 
-  class ListPage extends Component {
-    static templateString(id, vars) {
+  class ListPage extends Page {
+    static templateString(vars = {}, componentVars = {}) {
       return this._html`
       <div>
-        <h1>$${vars.title}</h1>
-        <ul>
+        <h1>List ($${vars.title})</h1>
+        <div>
+          <button class='add-item md-form-btn md-form-btn--raised'><span>Add</span></button>
+          <button class='add-item-edit md-form-btn md-form-btn--raised'><span>Add info</span></button>
+        </div>
+        <ul class='md-list'>
           ${vars.items.map(item => `
-            <li
-              data-component='ListItem'
-              data-id='item-${item.id}'
-            ></li>
+            <li class='md-list-item'>
+              <div
+                data-component='ListItem'
+                data-id='list-item-${item.id}'
+              ></div>
+            </li>
           `)}
         </ul>
-        <div>
-          <button class='add-item'>Add</button>
-        </div>
       </div>
       `;
     }
 
-    firstRender(vars) {
-      super.firstRender(vars);
+    firstRender(vars = {}, componentVars = {}) {
+      vars.items.forEach(item => {
+        this._subComponents[`list-item-${item.id}`] = new ListItem();
+        this._subComponents[`list-item-${item.id}`].render(vars, Object.assign({}, componentVars, {
+          item,
+        }));
+      });
+
+      super.firstRender(vars, componentVars);
+
       this._DOM.querySelector('.add-item').addEventListener('click', addItem);
-    }
-
-    reRender(vars) {
-      if (vars !== this._lastVars) {
-        if (vars.title !== this._lastVars.title) {
-          this._DOM.querySelector('h1').innerHTML = this.constructor._html`$${vars.title}`;
-        }
-
-        const ul = this._DOM.querySelector('ul');
-
-        const toDelete = this._lastVars.items.filter(oldItem => vars.items.findIndex(newItem => newItem.id === oldItem.id) === -1);
-        toDelete.forEach(deleteItem => {
-          ul.removeChild(this._DOM.querySelector(`li[data-id=item-${deleteItem.id}`));
-          delete this._subComponents[`item-${deleteItem.id}`];
-        });
-
-        let previousLi;
-
-        vars.items.forEach(newItem => {
-          const id = `item-${newItem.id}`;
-          if (this._subComponents[id]) {
-            // this._subComponents[id].render(vars);
-            previousLi = this._subComponents[id]._DOM.parentNode;
-          } else {
-            const component = new ListItem(id);
-            this._subComponents[id] = component;
-
-            const li = document.createElement('li');
-            li.dataset.id = id;
-            li.dataset.component = 'ListItem';
-            li.appendChild(this._subComponents[id].render(vars));
-
-            if (previousLi) {
-              ul.insertBefore(li, previousLi.nextSibling);
-            } else {
-              ul.insertBefore(li, ul.firstChild);
-            }
-
-            previousLi = li;
-          }
-        });
-
-        super.reRender(vars);
-      }
+      this._DOM.querySelector('.add-item-edit').addEventListener('click', editItemNew);
     }
   }
 
@@ -499,7 +484,7 @@
   };
 
   const addItem = () => {
-    store.title = '<em>Added</em>';
+    store.title = 'Added';
     store.items = store.items.slice();
 
     const item = {
@@ -507,54 +492,97 @@
       title: `item ${store.count}`,
     };
 
-    if (geoPosition) {
-      item.latitude = geoPosition.coords.latitude;
-      item.longitude = geoPosition.coords.longitude;
-    } else {
-      try {
-        console.log('No current location');
-        const lastGeoPosition = JSON.parse(localStorage.getItem('lastGeoPosition'));
-        item.latitude = lastGeoPosition.coords.latitude;
-        item.longitude = lastGeoPosition.coords.longitude;
-      } catch (excpn) {
-        console.log('No saved location');
-        item.latitude = 'none';
-        item.longitude = 'none';
-      }
-    }
+    const position = getPosition();
+    item.latitude = position.latitude;
+    item.longitude = position.longitude;
 
     store.items.push(item);
     store.count++;
 
     app.render(store);
+
+    fetch('/add', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(item)
+    })
+    .then(response => response.json())
+    .then(data => console.log('Add result: ', data))
+    .catch(err => console.log('Add error: ', err));
+
+    return store.count - 1;
   };
 
   const editItem = id => {
     store.editItem = id;
-    store.items[id].title += ' <i>editing</i>';
+    store.title = 'Editing';
+
     app.render(store);
   };
 
+  const editItemNew = () => {
+    editItem(addItem());
+  }
+
   const saveItem = (id, props) => {
     Object.assign(store.items[id], props);
+
+    store.title = 'Editing';
+
     app.render(store);
   };
 
   const closeEditItem = () => {
+    store.title = 'Edit closed';
+
+    fetch(`/edit/${store.editItem}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(store.items[store.editItem])
+    })
+    .then(response => response.json())
+    .then(data => console.log('Edit result: ', data))
+    .catch(err => console.log('Edit error: ', err));
+
     store.editItem = false;
+
     app.render(store);
   };
 
   const removeItem = id => {
-    store.title = '<em>Removed</em>';
+    store.title = 'Removed';
+
     const foundIndex = store.items.findIndex(item => item.id === id);
     if (foundIndex > -1) {
       store.items.splice(foundIndex, 1);
+
+      fetch('/remove/id', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+      })
+      .then(response => response.json())
+      .then(data => console.log('Remove result: ', data))
+      .catch(err => console.log('Remove error: ', err));
+
       app.render(store);
     }
   };
 
   const updatePage = name => {
+    store.title = 'Switched page';
+
     history.pushState(null, null, name);
     store.page = name;
     app.render(store);
@@ -564,6 +592,32 @@
   let geoPosition = null;
 
   const app = new App();
+
+  const getPosition = () => {
+    let latitude = '';
+    let longitude = '';
+
+    if (geoPosition) {
+      latitude = geoPosition.coords.latitude;
+      longitude = geoPosition.coords.longitude;
+    } else {
+      try {
+        console.log('No current location');
+        const lastGeoPosition = JSON.parse(localStorage.getItem('lastGeoPosition'));
+        latitude = lastGeoPosition.coords.latitude;
+        longitude = lastGeoPosition.coords.longitude;
+      } catch (excpn) {
+        console.log('No saved location');
+        latitude = 'none';
+        longitude = 'none';
+      }
+    }
+
+    return {
+      latitude,
+      longitude,
+    };
+  };
 
   const watchLocation = () => {
     if ('geolocation' in navigator) {
@@ -580,10 +634,11 @@
   };
 
 
-  const init = (pageName) => {
+  const init = (pageName, initParams) => {
+    console.log(initParams);
     store.page = pageName;
-    store.title = '<em>Testing</em>';
-    store.items = [];
+    store.title = 'Initialised';
+    store.items = initParams.items;
     store.count = 0;
     store.editItem = false;
 
@@ -594,7 +649,7 @@
     watchLocation();
   };
 
-  init('##pageName##');
+  init(##pageName##, ##initParams##);
 
 </script>
 

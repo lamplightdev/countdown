@@ -8,6 +8,7 @@
     "compression": "^1.6.2",
     "d3": "^3.5.17",
     "express": "^4.13.4",
+    "express-session": "^1.14.0",
     "jsdom": "^9.4.1",
     "moment": "^2.13.0",
     "pouchdb": "^5.4.1",
