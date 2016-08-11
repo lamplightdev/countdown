@@ -229,7 +229,7 @@
       componentVars.componentName = 'EditItem';
       componentVars.componentId = 'edit-item';
       componentVars.isOpen = vars.editItem !== false;
-      componentVars.editItem = vars.items[vars.editItem];
+      componentVars.editItem = vars.items.find(item => item.id === vars.editItem);
 
       return super.templateString(vars, componentVars);
     }
@@ -529,7 +529,8 @@
   }
 
   const saveItem = (id, props) => {
-    Object.assign(store.items[id], props);
+    const foundIndex = store.items.findIndex(item => item.id === id);
+    Object.assign(store.items[foundIndex], props);
 
     store.title = 'Editing';
 
@@ -539,6 +540,8 @@
   const closeEditItem = () => {
     store.title = 'Edit closed';
 
+    const foundItem = store.items.find(item => item.id === store.editItem);
+
     fetch(`/edit/${store.editItem}`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -546,7 +549,7 @@
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(store.items[store.editItem])
+      body: JSON.stringify(foundItem)
     })
     .then(response => response.json())
     .then(data => console.log('Edit result: ', data))
@@ -564,7 +567,7 @@
     if (foundIndex > -1) {
       store.items.splice(foundIndex, 1);
 
-      fetch('/remove/id', {
+      fetch(`/remove/${foundIndex}`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
@@ -640,7 +643,12 @@
     store.title = 'Initialised';
     store.items = initParams.items;
     store.count = 0;
+    if (store.items.length) {
+      store.count = store.items[store.items.length - 1].id + 1;
+    }
     store.editItem = false;
+
+    console.log('init store', store);
 
     main.innerHTML = '';
     main.appendChild(app.render(store));

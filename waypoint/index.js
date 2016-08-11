@@ -83,12 +83,13 @@ app.post('/add', (req, res) => {
 
 app.post('/edit/:id', (req, res) => {
   if (defined(req.params.id, req.body.title, req.body.latitude, req.body.longitude)) {
-    req.session.items[req.params.id] = {
-      id: req.body.id,
+    const foundItem = req.session.items.find(item => item.id === parseInt(req.params.id, 10));
+
+    Object.assign(foundItem, {
       title: req.body.title,
       latitude: req.body.latitude,
       longitude: req.body.longitude,
-    };
+    });
 
     res.json(true);
   } else {
